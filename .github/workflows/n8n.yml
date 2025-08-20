@@ -46,28 +46,3 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-
-    - name: Deploy
-      env:
-        DB_TYPE: postgresdb
-        DB_POSTGRESDB_HOST: ${{ secrets.DB_POSTGRESDB_HOST }}
-        DB_POSTGRESDB_PORT: ${{ secrets.DB_POSTGRESDB_PORT }}
-        DB_POSTGRESDB_DATABASE: ${{ secrets.DB_POSTGRESDB_DATABASE }}
-        DB_POSTGRESDB_USER: ${{ secrets.DB_POSTGRESDB_USER }}
-        DB_POSTGRESDB_PASSWORD: ${{ secrets.DB_POSTGRESDB_PASSWORD }}
-        DB_POSTGRESDB_SCHEMA: public
-        DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED: false
-      run: |
-        echo "Deploying n8n to production"
-        # Example deployment with env injection
-        ssh user@server "\
-          export DB_TYPE=$DB_TYPE \
-          DB_POSTGRESDB_HOST=$DB_POSTGRESDB_HOST \
-          DB_POSTGRESDB_PORT=$DB_POSTGRESDB_PORT \
-          DB_POSTGRESDB_DATABASE=$DB_POSTGRESDB_DATABASE \
-          DB_POSTGRESDB_USER=$DB_POSTGRESDB_USER \
-          DB_POSTGRESDB_PASSWORD=$DB_POSTGRESDB_PASSWORD \
-          DB_POSTGRESDB_SCHEMA=$DB_POSTGRESDB_SCHEMA \
-          DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=$DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED && \
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} && \
-          docker compose up -d"
