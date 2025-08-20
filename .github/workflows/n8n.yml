@@ -1,0 +1,68 @@
+name: Build and Deploy n8n
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/n8n
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.ACTION_GITHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Deploy
+      env:
+        DB_TYPE: postgresdb
+        DB_POSTGRESDB_HOST: ${{ secrets.DB_POSTGRESDB_HOST }}
+        DB_POSTGRESDB_PORT: ${{ secrets.DB_POSTGRESDB_PORT }}
+        DB_POSTGRESDB_DATABASE: ${{ secrets.DB_POSTGRESDB_DATABASE }}
+        DB_POSTGRESDB_USER: ${{ secrets.DB_POSTGRESDB_USER }}
+        DB_POSTGRESDB_PASSWORD: ${{ secrets.DB_POSTGRESDB_PASSWORD }}
+        DB_POSTGRESDB_SCHEMA: public
+        DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED: false
+      run: |
+        echo "Deploying n8n to production"
+        # Example deployment with env injection
+        ssh user@server "\
+          export DB_TYPE=$DB_TYPE \
+          DB_POSTGRESDB_HOST=$DB_POSTGRESDB_HOST \
+          DB_POSTGRESDB_PORT=$DB_POSTGRESDB_PORT \
+          DB_POSTGRESDB_DATABASE=$DB_POSTGRESDB_DATABASE \
+          DB_POSTGRESDB_USER=$DB_POSTGRESDB_USER \
+          DB_POSTGRESDB_PASSWORD=$DB_POSTGRESDB_PASSWORD \
+          DB_POSTGRESDB_SCHEMA=$DB_POSTGRESDB_SCHEMA \
+          DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=$DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED && \
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest && \
+          docker compose up -d"
