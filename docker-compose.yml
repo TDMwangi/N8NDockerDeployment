@@ -7,10 +7,15 @@ services:
     ports:
       - "5678:5678"
     environment:
+      # Basic settings
       - GENERIC_TIMEZONE=${TIMEZONE:-EAT}
       - TZ=${TIMEZONE:-EAT}
+
+      # Security
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_RUNNERS_ENABLED=true
+
+      # External Postgres Database (from Render or other provider)
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=${POSTGRES_DATABASE}
       - DB_POSTGRESDB_HOST=${POSTGRES_HOST}
